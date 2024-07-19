@@ -146,43 +146,48 @@ public class ConsoleClient {
 
         String line;
         StringBuilder text = new StringBuilder();
-        String pattern = "\\s+\"id\": \\d+,";
+        StringBuilder studentBlock = new StringBuilder();
         Integer currId;
         boolean isRemoved = false;
         while ((line = reader.readLine()) != null) {
-            if (Pattern.matches(pattern, line)) {
+            if (line.matches("\\s+\\{")) {
+                text.append(studentBlock);
+                studentBlock = new StringBuilder();
+                studentBlock.append(line).append("\n");
+            } else if (line.matches("\\s+\"name\": .+") || line.matches("\\s+},")) {
+                studentBlock.append(line).append("\n");
+            } else if (line.matches("\\s+}")) {
+                studentBlock.append(line).append("\n");
+                text.append(studentBlock);
+            } else if (line.matches("\\s+\"id\": \\d+,")) {
                 currId = Integer.valueOf(
                         line.replaceAll("[\\s:\"{},]", "").replace("id", "")
                 );
-                if (id.equals("1") && !isRemoved) {
-                    text.append(line).append("\n");
-                    for (int i = 0; i < 4; i++) {
-                        reader.readLine();
-                    }
-                    isRemoved = true;
-                } else if (!isRemoved && Integer.parseInt(id) - currId == 1) {
-                    text.append(line).append("\n"); //write curr id
-                    text.append(reader.readLine()).append("\n"); //write curr name
-                    if ((line = reader.readLine()).matches("\\s+}")) { //stop if end of file
-                        text.append("    }\n  ]\n}");
-                        return false;
-                    }
-                    for (int i = 0; i < 4; i++) {
+                if (isRemoved) {
+                    currId -= 1;
+                    studentBlock.append("      \"id\": ").append(currId).append(",\n");
+                } else if (Integer.parseInt(id) == currId) {
+                    for (int i = 0; i < 2; i++) {
                         line = reader.readLine();
                     }
-                    text.append(line).append("\n"); //write closing bracket
+                    if (line.matches("\\s+}")) {
+                        if (text.indexOf("},") != -1) {
+                            text.replace(text.length()-5, text.length()-1, "}");
+                        }
+                        text.append("  ]\n}");
+                        isRemoved = true;
+                        break;
+                    }
+                    line = reader.readLine();
                     isRemoved = true;
-                } else if (!isRemoved) {
-                    text.append(line).append("\n");
                 } else {
-                    currId -= 1;
-                    text.append("      \"id\": ").append(currId).append(",\n");
+                    studentBlock.append(line).append("\n");
                 }
             } else text.append(line).append("\n");
         }
         writer.write(text.toString());
         writer.close();
         reader.close();
-        return true;
+        return isRemoved;
     }
 }
