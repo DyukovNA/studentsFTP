@@ -28,8 +28,12 @@ public class Main {
             console.writer().println("Unexpected input");
 
         }*/
-        String[] loginInfo = "TestUser 1234 localhost".split(" ");
-        ConsoleClient consoleClient = new ConsoleClient(loginInfo);
+        try {
+            String[] loginInfo = "TestUser 1234 0.0.0.0".split(" ");
+            ConsoleClient consoleClient = new ConsoleClient(loginInfo);
 
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 }
