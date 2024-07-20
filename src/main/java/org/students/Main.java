@@ -1,3 +1,6 @@
+/**
+ * Provides access to a .json file on an FTP-server. The file contains information about students.
+ */
 package org.students;
 
 import java.io.Console;
@@ -11,11 +14,12 @@ public class Main {
             Console console = System.console();
             Scanner scanner = new Scanner(console.reader());
             console.writer().println("Please, enter your username, password and the server's IP-address:");
+            // TestUser 1234 0.0.0.0
             String[] loginInfo = scanner.nextLine().split(" ");
             ConsoleClient consoleClient = new ConsoleClient(loginInfo, JSONName);
             console.writer().println("Connection successful");
             console.writer().println("1.\tGet list of students by name\n" +
-                    "2.\tGet student info by id \n" +
+                    "2.\tGet student's info by id \n" +
                     "3.\tAdd student to list\n" +
                     "4.\tDelete student by id\n" +
                     "5.\tExit\n"
@@ -24,9 +28,10 @@ public class Main {
             do {
                 System.out.println("Select an action:");
                 action = scanner.nextInt();
-                consoleClient.menu(action, scanner);
+                consoleClient.menu(action, console);
             } while (action != 5);
         }  catch (IOException e) {
+            System.out.println("An error occurred");
             e.printStackTrace();
         }
     }
