@@ -1,6 +1,3 @@
-/**
- *
- */
 package org.students;
 
 import java.io.*;
@@ -8,35 +5,57 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.util.*;
 
+/**
+ * This class includes all methods to work with FTP-server and the file on it
+ */
 public class ConsoleClient {
-    String link;
-    String JSONName;
+    /**
+     * Fields for an FTP-link and filename
+     */
+    public final String link;
+    public final String JSONName;
+    /**
+     * Regexes that are used in class to parse the .json file
+     */
     private static final String idRegex = "\\s+\"id\": \\d+,";
     private static final String argumentRegex = "\\s+\"[\\w\\d]+\":\\s+\"?[\\w\\d\\s]+\"?,?";
     private static final String symbolsRegex = "[\\s:\"{},]";
     private static final String endOfLastBlockRegex = "\\s+}";
     private static final String beginOfNewBoxRegex = "\\s+\\{";
+    private static final String multipleInputRegex = "\\w+ [\\w\\d]+((, \\w+ [\\w\\d]+)+)?";
+
+    /**
+     * Builds an FTP-link from the info provided by user in Main
+     * @param loginInfo Information provided by user
+     * @param filename Name of the .json file
+     */
     public ConsoleClient(String[] loginInfo, String filename){
         link = "ftp://" + loginInfo[0] + ":" + loginInfo[1] + "@" + loginInfo[2] + "/";
         JSONName = filename;
     }
 
-    public void menu(Integer action, Console console) throws IOException {
+    /**
+     * Calls methods according to the number of action provided by user
+     * @param action Number corresponding to action
+     * @throws IOException If is unable to get InputStream or OutputStream from URLConnection in any of methods
+     * @see URLConnection
+     */
+    public void menu(Integer action) throws IOException, InputMismatchException {
         switch (action) {
             case 1: {
                 showListOfStudents();
                 break;
             }
             case 2: {
-                showStudentInfo(console);
+                showStudentInfo();
                 break;
             }
             case 3: {
-                showAddStudent(console);
+                showAddStudent();
                 break;
             }
             case 4: {
-                showDeleteStudent(console);
+                showDeleteStudent();
                 break;
             }
             case 5: {
@@ -50,50 +69,83 @@ public class ConsoleClient {
         }
     }
 
-    private void showDeleteStudent(Console console) throws IOException {
+    /**
+     * Interacts with user to get ID of the student that needs to be removed from the file.
+     * Calls deleteStudent() method to remove student with given ID.
+     * @throws IOException If is unable to get InputStream or OutputStream from URLConnection
+     * @see URLConnection
+     */
+    private void showDeleteStudent() throws IOException {
         System.out.println("Please, enter student's ID");
-        Scanner scanner = new Scanner(console.reader());
+        Scanner scanner = new Scanner(System.in);
         int idDelete = scanner.nextInt();
-        if (deleteStudent(Integer.toString(idDelete))) {
-            System.out.println("Student successfully removed");
-        }
+        deleteStudent(Integer.toString(idDelete));
+        System.out.println("Student successfully removed");
     }
 
-    private void showAddStudent(Console console) throws IOException {
+    /**
+     * Interacts with user to get information about the student that needs to be added to the file.
+     * Calls addStudent() method to add student with given arguments.
+     * @throws IOException If is unable to get InputStream or OutputStream from URLConnection
+     * @see URLConnection
+     */
+    private void showAddStudent() throws IOException, InputMismatchException {
         System.out.println("Please, enter student's information:\n" +
                 "Note: enter arguments and their values in pairs. " +
                 "Pairs are divided by space and comma (', ')." +
                 "Argument and its value are divided by space\n" +
                 "For example: name Alex, age 20");
-        Scanner scanner = new Scanner(console.reader());
-        String info = scanner.nextLine();
-        if (!(info.matches("\\w+ [\\w\\d]+(, \\w+ [\\w\\d]+)+") || info.matches("\\w+ [\\w\\d]+"))) {
+        Scanner scanner = new Scanner(System.in);
+        String info = scanner.next();
+        if (!info.matches(multipleInputRegex)) {
             System.out.println("Invalid input");
             return;
         }
-        if (addStudent(info)) {
-            System.out.println("Student successfully added");
-        } else System.out.println("Unexpected error occurred");
+        addStudent(info);
+        System.out.println("Student successfully added");
     }
 
-    private void showStudentInfo(Console console) throws IOException {
+    /**
+     * Interacts with user to get ID of the student whose information is needed.
+     * Calls getStudentInfo() method to get data of student with given ID.
+     * @throws IOException If is unable to get InputStream or OutputStream from URLConnection
+     * @see URLConnection
+     */
+    private void showStudentInfo() throws IOException {
         System.out.println("Please, student's ID:");
-        Scanner scanner = new Scanner(console.reader());
+        Scanner scanner = new Scanner(System.in);
         String id = scanner.nextLine();
         System.out.println(getStudentInfo(id));
     }
 
+    /**
+     * Calls getSortedListOfStudents() method to get list of students in alphabetical order and prints it out.
+     * @throws IOException If is unable to get InputStream or OutputStream from URLConnection
+     * @see URLConnection
+     */
     private void showListOfStudents() throws IOException {
         List<String> listOfStudents = getSortedListOfStudents();
         listOfStudents.forEach(System.out::println);
     }
 
+    /**
+     * Creates BufferedReader to read the file from the connection
+     * @return BufferedReader to read the file
+     * @throws IOException If is unable to get InputStream from URLConnection
+     * @see URLConnection
+     */
     private BufferedReader getReader() throws IOException {
         URLConnection connection = setConnection(JSONName);
         assert connection != null;
         return new BufferedReader(new InputStreamReader(connection.getInputStream()));
     }
 
+    /**
+     * Creates BufferedWriter to write to the file from connection
+     * @return BufferedWriter to write to the file
+     * @throws IOException If is unable to get OutputStream from URLConnection
+     * @see URLConnection If is unable to get InputStream or OutputStream from URLConnection
+     */
     private BufferedWriter getWriter() throws IOException {
         URLConnection connection = setConnection(JSONName);
         assert connection != null;
@@ -101,6 +153,12 @@ public class ConsoleClient {
         return new BufferedWriter(new OutputStreamWriter(outputStream));
     }
 
+    /**
+     * Establishes connection with FTP-server and file on it.
+     * @param filename Name of .json file on server
+     * @return Connection to FTP-server
+     * @see URLConnection If is unable to get InputStream or OutputStream from URLConnection
+     */
     private URLConnection setConnection(String filename) {
         try {
             URL url = new URL(link + filename);
@@ -114,6 +172,11 @@ public class ConsoleClient {
         return null;
     }
 
+    /**
+     * Gets list of names from file using getListOfStudents() and sorts it
+     * @return Sorted list of students' names
+     * @throws IOException If is unable to get InputStream or OutputStream from URLConnection
+     */
     public List<String> getSortedListOfStudents() throws IOException {
         List<String> students = new ArrayList<>();
         getListOfStudents(students);
@@ -122,6 +185,12 @@ public class ConsoleClient {
         return students;
     }
 
+    /**
+     * Finds student with specified ID if file and returns all information written in file
+     * @param id ID of student
+     * @return String with all information about the student in file
+     * @throws IOException If is unable to get InputStream or OutputStream from URLConnection
+     */
     public String getStudentInfo(String id) throws IOException {
         String idToFind = "id" + id;
         Map<String, String> data = new LinkedHashMap<>();
@@ -134,7 +203,12 @@ public class ConsoleClient {
         return data.toString().replaceAll("[{}]", "");
     }
 
-    public boolean addStudent(String info) throws IOException {
+    /**
+     * Writes information about student into file. Generates ID.
+     * @param info String of specified format with information about student
+     * @throws IOException If is unable to get InputStream or OutputStream from URLConnection
+     */
+    public void addStudent(String info) throws IOException {
         BufferedReader reader = getReader();
         BufferedWriter writer = getWriter();
 
@@ -144,9 +218,11 @@ public class ConsoleClient {
 
         while ((line = reader.readLine()) != null) {
             if (line.matches(idRegex)) {
+                // Max value of id read to this moment
                 maxId = parseId(line);
                 writeNewLine(text, line);
             } else if (line.matches(endOfLastBlockRegex)) {
+                // If it is last record insert new record with ID += 1
                 maxId += 1;
                 writeNewStudent(maxId, text, line, info);
                 break;
@@ -156,10 +232,15 @@ public class ConsoleClient {
         writer.write(text.toString());
         writer.close();
         reader.close();
-        return true;
     }
 
-    public boolean deleteStudent(String idToRemove) throws IOException {
+    /**
+     * Removes record of student with given ID by rewriting whole file and skipping unneeded part.
+     * Changes IDs if necessary.
+     * @param idToRemove ID of student
+     * @throws IOException If is unable to get InputStream or OutputStream from URLConnection
+     */
+    public void deleteStudent(String idToRemove) throws IOException {
         BufferedReader reader = getReader();
         BufferedWriter writer = getWriter();
 
@@ -189,12 +270,16 @@ public class ConsoleClient {
         writer.write(text.toString());
         writer.close();
         reader.close();
-        return isRemoved;
     }
 
+    /**
+     * Fills empty list with names found in file
+     * @param students Previously created empty list
+     * @throws IOException If is unable to get InputStream from URLConnection
+     * @see URLConnection
+     */
     private void getListOfStudents(List<String> students) throws IOException {
         BufferedReader reader = getReader();
-
         String line;
         while ((line = reader.readLine()) != null) {
             if (line.contains("\"name\"")) {
@@ -203,10 +288,16 @@ public class ConsoleClient {
                 );
             }
         }
-
         reader.close();
     }
 
+    /**
+     * Finds student in file by provided ID and reads all its fields
+     * @param idToFind Provided ID
+     * @param data Map for arguments and their values
+     * @throws IOException If is unable to get InputStream from URLConnection
+     * @see URLConnection
+     */
     private void findStudentGetInfo(String idToFind, Map<String, String> data) throws IOException {
         BufferedReader reader = getReader();
         String line;
@@ -221,20 +312,40 @@ public class ConsoleClient {
         reader.close();
     }
 
-    private void writeNewStudent(int maxId, StringBuilder text, String line, String info) {
+    /**
+     * Writes new student entry into file
+     * @param id ID of new student
+     * @param text StringBuilder with altered file
+     * @param line Last line read by BufferedReader
+     * @param info String of specified format with information about student
+     */
+    private void writeNewStudent(int id, StringBuilder text, String line, String info) {
         String[] infoPairs = info.split(", ");
         int i = infoPairs.length;
 
         text.append(line).append(",\n\t\t{\n");
-        text.append("\t\t\t\"id\": ").append(maxId).append(",\n");
+        text.append("\t\t\t\"id\": ").append(id).append(",\n");
 
         for (String infoPair: infoPairs) {
             i-=1;
-            writeNewEntry(i, infoPair, text);
+            writeNewField(i, infoPair, text);
         }
         text.append("\t\t}\n\t]\n}");
     }
 
+    /**
+     * Is called on every line that contains ID. If entry with idToRemove is already removed writes line to text with
+     * ID lowered by 1. If ID in line matches idToRemove calls skipStudent() so that student won't be written into
+     * studentBlock. In any other cases writes line into studentBlock.
+     * @param idToRemove ID of student
+     * @param line Last line read by BufferedReader
+     * @param isRemoved Indicator of if the student was removed
+     * @param text StringBuilder with altered file
+     * @param studentBlock StringBuilder with .json list entry
+     * @param reader BufferedReader of file
+     * @return Is student entry skipped
+     * @throws IOException If error occurred in skipStudent
+     */
     private boolean analyseId(
             String idToRemove, String line, boolean isRemoved, StringBuilder text,
             StringBuilder studentBlock, BufferedReader reader
@@ -245,14 +356,22 @@ public class ConsoleClient {
             currId -= 1;
             writeNewLine(studentBlock, "\t\t\t\"id\": " + currId + ",");
         } else if (Integer.parseInt(idToRemove) == currId) {
-            isRemoved = skipStudent(line, reader, text);
+            skipStudent(line, reader, text);
+            isRemoved = true;
         } else {
             writeNewLine(studentBlock, line);
         }
         return isRemoved;
     }
 
-    private boolean skipStudent(
+    /**
+     * Skips lines of file that contain fields of student entry
+     * @param line Last line read by BufferedReader
+     * @param reader BufferedReader of file
+     * @param text StringBuilder with altered file
+     * @throws IOException If unable to read next line
+     */
+    private void skipStudent(
             String line, BufferedReader reader, StringBuilder text
     ) throws IOException {
         while (line.matches(argumentRegex)) {
@@ -262,13 +381,16 @@ public class ConsoleClient {
             if (text.indexOf("},") != -1) {
                 text.replace(text.length()-5, text.length()-1, "\t}");
             }
-//            text.append("\t]\n}");
-            return true;
         }
         reader.readLine();
-        return true;
     }
 
+    /**
+     * Reads all fields of entry and places them into Map
+     * @param reader BufferedReader of file
+     * @param data Map for arguments and their values
+     * @throws IOException If unable to read next line
+     */
     private void readStudentInfo(BufferedReader reader, Map<String, String> data) throws IOException {
         String line;
         while (!(line = reader.readLine()).matches("\\s+},?")) {
@@ -277,7 +399,13 @@ public class ConsoleClient {
         }
     }
 
-    private void writeNewEntry(int i, String infoPair, StringBuilder text) {
+    /**
+     * Writes into text new field which key and value are from infoPair
+     * @param i Counter of how many fields is left
+     * @param infoPair Contains key and value divided by space
+     * @param text StringBuilder with altered file
+     */
+    private void writeNewField(int i, String infoPair, StringBuilder text) {
         String argumentDgt = "\t\t\t\"%s\": %s";
         String argumentStr = "\t\t\t\"%s\": \"%s\"";
 
@@ -291,10 +419,20 @@ public class ConsoleClient {
         } else text.append(",\n");
     }
 
+    /**
+     * Writes line with newline at the end into StringBuilder
+     * @param sb StringBuilder
+     * @param line String to write
+     */
     private void writeNewLine(StringBuilder sb, String line) {
         sb.append(line).append("\n");
     }
 
+    /**
+     * Parses ID from string of specified format
+     * @param line String of specified format
+     * @return ID
+     */
     private int parseId(String line) {
         return Integer.parseInt(
                 line.replaceAll(symbolsRegex, "").replace("id", "")
