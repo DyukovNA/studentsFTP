@@ -129,7 +129,7 @@ public class ConsoleClient {
     }
 
     /**
-     * Creates BufferedReader to read the file from the connection
+     * Creates BufferedReader to read the file from the connection.
      * @return BufferedReader to read the file
      * @throws IOException If is unable to get InputStream from URLConnection
      * @see URLConnection
@@ -141,7 +141,7 @@ public class ConsoleClient {
     }
 
     /**
-     * Creates BufferedWriter to write to the file from connection
+     * Creates BufferedWriter to write to the file from connection.
      * @return BufferedWriter to write to the file
      * @throws IOException If is unable to get OutputStream from URLConnection
      * @see URLConnection If is unable to get InputStream or OutputStream from URLConnection

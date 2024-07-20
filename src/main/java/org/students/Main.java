@@ -28,7 +28,6 @@ public class Main {
             // TestUser 1234 0.0.0.0
             String[] loginInfo = scanner.nextLine().split(" ");
             ConsoleClient consoleClient = new ConsoleClient(loginInfo, JSONName);
-            System.out.println("Connection successful");
             System.out.println("1.\tGet list of students by name\n" +
                     "2.\tGet student's info by id \n" +
                     "3.\tAdd student to list\n" +
