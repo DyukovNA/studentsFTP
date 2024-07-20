@@ -177,7 +177,7 @@ public class ConsoleClient {
      * @return Sorted list of students' names
      * @throws IOException If is unable to get InputStream or OutputStream from URLConnection
      */
-    public List<String> getSortedListOfStudents() throws IOException {
+    private List<String> getSortedListOfStudents() throws IOException {
         List<String> students = new ArrayList<>();
         getListOfStudents(students);
 
@@ -191,7 +191,7 @@ public class ConsoleClient {
      * @return String with all information about the student in file
      * @throws IOException If is unable to get InputStream or OutputStream from URLConnection
      */
-    public String getStudentInfo(String id) throws IOException {
+    private String getStudentInfo(String id) throws IOException {
         String idToFind = "id" + id;
         Map<String, String> data = new LinkedHashMap<>();
 
@@ -208,7 +208,7 @@ public class ConsoleClient {
      * @param info String of specified format with information about student
      * @throws IOException If is unable to get InputStream or OutputStream from URLConnection
      */
-    public void addStudent(String info) throws IOException {
+    private void addStudent(String info) throws IOException {
         BufferedReader reader = getReader();
         BufferedWriter writer = getWriter();
 
@@ -240,7 +240,7 @@ public class ConsoleClient {
      * @param idToRemove ID of student
      * @throws IOException If is unable to get InputStream or OutputStream from URLConnection
      */
-    public void deleteStudent(String idToRemove) throws IOException {
+    private void deleteStudent(String idToRemove) throws IOException {
         BufferedReader reader = getReader();
         BufferedWriter writer = getWriter();
 
@@ -251,7 +251,9 @@ public class ConsoleClient {
         
         while ((line = reader.readLine()) != null) {
             if (line.matches(beginOfNewBoxRegex)) {
-                text.append(studentBlock);
+                if (!studentBlock.toString().matches("\\s+\\{\n")) {
+                    text.append(studentBlock);
+                }
                 studentBlock = new StringBuilder();
                 writeNewLine(studentBlock, line);
             } else if (line.matches(endOfLastBlockRegex)) {
@@ -259,9 +261,7 @@ public class ConsoleClient {
                 text.append(studentBlock);
             } else if (line.matches(idRegex)) {
                 isRemoved = analyseId(idToRemove, line, isRemoved, text, studentBlock, reader);
-            } else if (
-                    line.matches(argumentRegex) || line.matches("\\s+},")
-            ) {
+            } else if (line.matches(argumentRegex) || line.matches("\\s+},")) {
                 writeNewLine(studentBlock, line);
             } else
                 writeNewLine(text, line);
@@ -352,12 +352,12 @@ public class ConsoleClient {
     ) throws IOException {
         int currId;
         currId = parseId(line);
-        if (isRemoved) {
-            currId -= 1;
-            writeNewLine(studentBlock, "\t\t\t\"id\": " + currId + ",");
-        } else if (Integer.parseInt(idToRemove) == currId) {
+        if (Integer.parseInt(idToRemove) == currId && !isRemoved) {
             skipStudent(line, reader, text);
             isRemoved = true;
+        } else if (isRemoved) {
+            currId -= 1;
+            writeNewLine(studentBlock, "\t\t\t\"id\": " + currId + ",");
         } else {
             writeNewLine(studentBlock, line);
         }
@@ -379,10 +379,9 @@ public class ConsoleClient {
         }
         if (line.matches(endOfLastBlockRegex)) {
             if (text.indexOf("},") != -1) {
-                text.replace(text.length()-5, text.length()-1, "\t}");
+                text.replace(text.length()-5, text.length()-1, "\t\t}");
             }
         }
-        reader.readLine();
     }
 
     /**

@@ -27,7 +27,6 @@ public class Main {
             System.out.println("Please, enter your username, password and the server's IP-address:");
             // TestUser 1234 0.0.0.0
             String[] loginInfo = scanner.nextLine().split(" ");
-            System.out.println(loginInfo[0]);
             ConsoleClient consoleClient = new ConsoleClient(loginInfo, JSONName);
             System.out.println("Connection successful");
             System.out.println("1.\tGet list of students by name\n" +
