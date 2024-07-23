@@ -20,14 +20,15 @@ public class Main {
     /**
      * Name of the file on an FTP-server.
      */
-    private static final String JSONName = "students.json"; // Имя файла на сервере
+    private static final String JSONName = "testStudents.json";
     public static void main(String[] args) {
         try {
             Scanner scanner = new Scanner(System.in);
             System.out.println("Please, enter your username, password and the server's IP-address:");
-            // TestUser 1234 0.0.0.0
-            String[] loginInfo = scanner.nextLine().split(" ");
-            ConsoleClient consoleClient = new ConsoleClient(loginInfo, JSONName);
+            // String[] loginInfo =  "TestUser 1234 0.0.0.0".split(" ");
+
+            ConnectionHandler connectionHandler = new ConnectionHandler(scanner.nextLine(), JSONName);
+            ConsoleClient consoleClient = new ConsoleClient(connectionHandler);
             System.out.println("1.\tGet list of students by name\n" +
                     "2.\tGet student's info by id \n" +
                     "3.\tAdd student to list\n" +
