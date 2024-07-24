@@ -21,48 +21,63 @@ public class ConsoleClient {
 
     /**
      * Calls methods according to the number of action provided by user
-     * @param action Number corresponding to action
      * @throws IOException If is unable to get InputStream or OutputStream from URLConnection in any of methods
      * @see ConnectionHandler
      */
-    public void menu(Integer action) throws IOException, InputMismatchException {
-        switch (action) {
-            case 1: {
-                showListOfStudents();
-                break;
+    public void menu(Scanner scanner) throws IOException {
+        int action;
+
+        System.out.println("1.\tGet list of students by name\n" +
+                "2.\tGet student's info by id \n" +
+                "3.\tAdd student to list\n" +
+                "4.\tDelete student by id\n" +
+                "5.\tExit\n"
+        );
+
+        do {
+            System.out.println("Select an action:\n");
+            action = scanner.nextInt();
+            switch (action) {
+                case 1: {
+                    showSortedStudentList();
+                    break;
+                }
+                case 2: {
+                    showStudentInfo();
+                    break;
+                }
+                case 3: {
+                    showAddStudent();
+                    break;
+                }
+                case 4: {
+                    showDeleteStudent();
+                    break;
+                }
+                case 5: {
+                    System.out.println("Exiting session...");
+                    break;
+                }
+                default: {
+                    System.out.println("Unknown command");
+                    break;
+                }
             }
-            case 2: {
-                showStudentInfo();
-                break;
-            }
-            case 3: {
-                showAddStudent();
-                break;
-            }
-            case 4: {
-                showDeleteStudent();
-                break;
-            }
-            case 5: {
-                System.out.println("Exiting session...");
-                break;
-            }
-            default: {
-                System.out.println("Unknown command");
-                break;
-            }
-        }
+        } while (action != 5);
     }
 
     /**
-     * Gets list of students in alphabetical order and prints it out.
+     * Checks if list of students is empty. Prints out list or error message
      * @throws IOException If is unable to get InputStream or OutputStream from URLConnection
      * @see ConnectionHandler
      */
-    private void showListOfStudents() throws IOException {
-        List<String> students = getListOfStudents();
-        Collections.sort(students);
-        students.forEach(System.out::println);
+    private void showSortedStudentList() throws IOException {
+        String toReturn = getSortedListOfStudents();
+        if (toReturn.equals("")) {
+            System.out.println("No students found");
+            return;
+        }
+        System.out.println(toReturn);
     }
 
     /**
@@ -72,7 +87,7 @@ public class ConsoleClient {
      * @see ConnectionHandler
      */
     private void showStudentInfo() throws IOException {
-        System.out.println("Please, student's ID:");
+        System.out.println("Please, enter student's ID:");
         Scanner scanner = new Scanner(System.in);
         String id = scanner.nextLine();
         System.out.println(getStudentInfo(id));
@@ -85,12 +100,12 @@ public class ConsoleClient {
      * @see ConnectionHandler
      * @see TextEditor
      */
-    private void showAddStudent() throws IOException, InputMismatchException {
-        System.out.println("Please, enter student's information:\n" +
+    private void showAddStudent() throws IOException {
+        System.out.println("Please, enter student's information:\n\n" +
                 "Note: enter arguments and their values in pairs. " +
-                "Pairs are divided by space and comma (', ')." +
+                "Pairs are divided by space and comma (', '). \n" +
                 "Argument and its value are divided by space\n" +
-                "For example: name Alex, age 20");
+                "For example: name Alex, age 20\n");
         Scanner scanner = new Scanner(System.in);
         String info = scanner.nextLine();
         if (!textEditor.isValidInput(info)) {
@@ -113,6 +128,22 @@ public class ConsoleClient {
         int idDelete = scanner.nextInt();
         deleteStudent(Integer.toString(idDelete));
         System.out.println("Student successfully removed");
+    }
+
+    /**
+     * Sorts list of students in alphabetical order and formats it into string
+     * @return String with numbered list
+     * @throws IOException If is unable to get InputStream or OutputStream from URLConnection
+     */
+    public String getSortedListOfStudents() throws IOException {
+        List<String> students = getListOfStudents();
+        Collections.sort(students);
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < students.size(); i++) {
+            sb.append(i + 1).append(". ").append(students.get(i));
+            if (i != students.size() - 1) sb.append(",\n");
+        }
+        return sb.toString();
     }
 
     /**
@@ -141,13 +172,11 @@ public class ConsoleClient {
      * @see TextEditor
      */
     public void addStudent(String info) throws IOException {
-        BufferedWriter writer = connectionHandler.getWriter();
+        writeHeaderIfEmpty();
+
         StringBuilder text = new StringBuilder();
-
-        writer.write(getHeaderIfEmpty());
-        writer.flush();
-
         writeStudentToSB(text, info);
+        BufferedWriter writer = connectionHandler.getWriter();
 
         writer.write(text.toString());
         writer.close();
@@ -162,11 +191,10 @@ public class ConsoleClient {
      * @see TextEditor
      */
     public void deleteStudent(String idToRemove) throws IOException {
-        BufferedWriter writer = connectionHandler.getWriter();
-
         StringBuilder text = new StringBuilder();
-
         writeWithoutStudent(text, idToRemove);
+
+        BufferedWriter writer = connectionHandler.getWriter();
 
         writer.write(text.toString());
         writer.close();
@@ -208,9 +236,10 @@ public class ConsoleClient {
             if (textEditor.isId(line)) {
                 String s = String.valueOf(textEditor.parseId(line));
                 if (s.equals(idToFind)) {
-                    while (!(line = reader.readLine()).matches("\\s+},?")) {
+                    while (!line.matches("\\s+},?")) {
                         String[] info = textEditor.clean(line).split(":");
                         data.putIfAbsent(info[0], info[1]);
+                        line = reader.readLine();
                     }
                 }
             }
@@ -241,7 +270,12 @@ public class ConsoleClient {
                 textEditor.writeNewLine(text, line + ",");
                 textEditor.writeNewStudent(maxId, text, info);
                 break;
-            } else textEditor.writeNewLine(text, line);
+            } else if (line.matches("\\s+]")) {
+                maxId += 1;
+                textEditor.writeNewStudent(maxId, text, info);
+                break;
+            }
+            else textEditor.writeNewLine(text, line);
         }
 
         reader.close();
@@ -332,14 +366,29 @@ public class ConsoleClient {
     }
 
     /**
-     * Checks if file is empty, if so returns empty json list "students" into stringBuilder
+     * If file is empty writes empty json list "students" into file
+     * @throws IOException If unable to read next line
+     */
+    private void writeHeaderIfEmpty() throws IOException {
+        String header = getHeaderIfEmpty();
+        if (!header.equals("")) {
+            BufferedWriter writerHeader = connectionHandler.getWriter();
+            writerHeader.write(header);
+            writerHeader.flush();
+            writerHeader.close();
+        }
+    }
+
+    /**
+     * Checks if file is empty, if so returns empty json list "students"
      * @throws IOException If unable to read next line
      */
     private String getHeaderIfEmpty() throws IOException {
         BufferedReader reader = connectionHandler.getReader();
-        if (reader.readLine().isEmpty()) {
+        if (reader.readLine() == null) {
             return "{\n\t\"students\": [\n\t]\n}";
         }
+        reader.close();
         return "";
     }
 }

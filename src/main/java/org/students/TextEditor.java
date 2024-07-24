@@ -1,10 +1,5 @@
 package org.students;
 
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.IOException;
-import java.util.Map;
-
 public class TextEditor {
     /**
      * Regexes that are used in class to parse the .json file

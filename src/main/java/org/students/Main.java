@@ -24,23 +24,11 @@ public class Main {
     public static void main(String[] args) {
         try {
             Scanner scanner = new Scanner(System.in);
-            System.out.println("Please, enter your username, password and the server's IP-address:");
-            // String[] loginInfo =  "TestUser 1234 0.0.0.0".split(" ");
-
+            System.out.println("Please, enter your username, password and IP-address of the server:");
+            // TestUser 1234 0.0.0.0
             ConnectionHandler connectionHandler = new ConnectionHandler(scanner.nextLine(), JSONName);
             ConsoleClient consoleClient = new ConsoleClient(connectionHandler);
-            System.out.println("1.\tGet list of students by name\n" +
-                    "2.\tGet student's info by id \n" +
-                    "3.\tAdd student to list\n" +
-                    "4.\tDelete student by id\n" +
-                    "5.\tExit\n"
-            );
-            int action;
-            do {
-                System.out.println("Select an action:");
-                action = scanner.nextInt();
-                consoleClient.menu(action);
-            } while (action != 5);
+            consoleClient.menu(scanner);
         }  catch (IOException e) {
             System.out.println("An error occurred");
             e.printStackTrace();
